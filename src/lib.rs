@@ -13,7 +13,7 @@ impl Mash{
     pub fn new()->Self{
         Self { n: 4022871197.0 }
     }
-    pub fn next(&mut self, r:&str)->f64{
+    pub fn hash(&mut self, r:&str)->f64{
         let e = 0.02519603282416938;
         for s in r.encode_utf16().collect::<Vec<u16>>(){
             self.n+=s as f64;
@@ -33,13 +33,13 @@ pub struct Alea{
 impl Alea {
     pub fn new(seed: String)->Self{
         let mut mash = Mash::new();
-        let mut s0 = mash.next(" ");
-        let mut s1 = mash.next(" ");
-        let mut s2 = mash.next(" ");
+        let mut s0 = mash.hash(" ");
+        let mut s1 = mash.hash(" ");
+        let mut s2 = mash.hash(" ");
         let x = 1.0;
-        s0 -= mash.next(&seed);
-        s1 -= mash.next(&seed);
-        s2 -= mash.next(&seed);
+        s0 -= mash.hash(&seed);
+        s1 -= mash.hash(&seed);
+        s2 -= mash.hash(&seed);
         if s0 < 0.0{
             s0 +=1.0;
         }
@@ -51,13 +51,16 @@ impl Alea {
         }
         Self { s0,s1,s2,x}
     }
-    pub fn next(&mut self) -> f64{
+    pub fn random(&mut self) -> f64{
         let y = self.x * 2f64.powi(-32) + self.s0 * 2091639.0;
         self.s0 = self.s1;
         self.s1 = self.s2;
         self.x = bit_or(y);
         self.s2 = y - self.x;
         self.s2
+    }
+    pub fn uint32(&mut self)-> u32{
+        (self.random() * 2f64.powi(32)) as u32
     }
 }
 
@@ -81,26 +84,28 @@ mod tests {
     #[test]
     fn mash_test(){
         let mut mash = Mash::new();
-        assert_eq!(mash.next(""), -0.06335230986587703);
+        assert_eq!(mash.hash(""), -0.06335230986587703);
         let mut mash = Mash::new();
-        assert_eq!(mash.next(" "), -0.1366710769943893);
+        assert_eq!(mash.hash(" "), -0.1366710769943893);
         let mut mash = Mash::new();
-        assert_eq!(mash.next("frank"), 0.044354382902383804);
+        assert_eq!(mash.hash("frank"), 0.044354382902383804);
         let mut mash = Mash::new();
-        assert_eq!(mash.next("cat"), 0.06714190426282585);
-        assert_eq!(mash.next("rat"), -0.24548634607344866);
-        assert_eq!(mash.next("bat"), 0.05828765174373984);
-        assert_eq!(mash.next(" "), 0.03728155279532075);
-        assert_eq!(mash.next(" "), 0.32264634780585766);
-        assert_eq!(mash.next(" "), -0.356016042875126);
-        assert_eq!(mash.next(" "), -0.4360403118189424);
+        assert_eq!(mash.hash("cat"), 0.06714190426282585);
+        assert_eq!(mash.hash("rat"), -0.24548634607344866);
+        assert_eq!(mash.hash("bat"), 0.05828765174373984);
+        assert_eq!(mash.hash(" "), 0.03728155279532075);
+        assert_eq!(mash.hash(" "), 0.32264634780585766);
+        assert_eq!(mash.hash(" "), -0.356016042875126);
+        assert_eq!(mash.hash(" "), -0.4360403118189424);
     }
     #[test]
     fn alea_test(){
         let mut a = Alea::new("frank".to_string());
-        assert_eq!(a.next(), 0.8080874253064394);
-        assert_eq!(a.next(), 0.8366762748919427);
-        assert_eq!(a.next(), 0.24404818122275174);
+        assert_eq!(a.random(), 0.8080874253064394);
+        assert_eq!(a.random(), 0.8366762748919427);
+        assert_eq!(a.random(), 0.24404818122275174);
+        let mut a = Alea::new("frank".to_string());
+        assert_eq!(a.uint32(), 3470709064);
     }
 }
 /*
