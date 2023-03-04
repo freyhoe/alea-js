@@ -6,14 +6,14 @@ fn bit_or(num : f64)->f64{
     num as i64 as i32 as f64
 }
 //alea specific string hash function
-struct Mash{
+pub struct Mash{
     n:f64
 }
 impl Mash{
-    fn new()->Self{
+    pub fn new()->Self{
         Self { n: 4022871197.0 }
     }
-    fn next(&mut self, r:&str)->f64{
+    pub fn next(&mut self, r:&str)->f64{
         let e = 0.02519603282416938;
         for s in r.encode_utf16().collect::<Vec<u16>>(){
             self.n+=s as f64;
