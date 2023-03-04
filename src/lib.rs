@@ -5,7 +5,17 @@ fn bit_or(num : f64)->f64{
     // then converted back into 64 bits javascript numbers
     num as i64 as i32 as f64
 }
-//alea specific string hash function
+/// Alea specific string hash function, faithful to javascript outputs.
+/// Normally used privately, but can be used alone.
+/// 
+/// # Example
+/// 
+/// ```
+/// let mash = Mash::new();
+/// mash.hash("string to hash")
+/// mash.hash("second string to hash")
+/// ```
+#[derive(Copy, Clone)]
 pub struct Mash{
     n:f64
 }
@@ -13,6 +23,9 @@ impl Mash{
     pub fn new()->Self{
         Self { n: 4022871197.0 }
     }
+    /// Hashes a string.
+    /// Function alters Mash state:
+    /// Hashing the same string twice produces different results.
     pub fn hash(&mut self, r:&str)->f64{
         let e = 0.02519603282416938;
         for s in r.encode_utf16().collect::<Vec<u16>>(){
@@ -24,13 +37,26 @@ impl Mash{
         bit_or(self.n) * 2f64.powi(-32)
     }
 }
+/// Seedable random number generator, faithful to javascript.
+/// # Examples
+/// 
+/// ```
+/// let mut a = Alea::new("frank".to_string());
+/// assert_eq!(a.random(), 0.8080874253064394);
+/// assert_eq!(a.random(), 0.8366762748919427);
+/// assert_eq!(a.random(), 0.24404818122275174);
+/// let mut a = Alea::new("frank".to_string());
+/// assert_eq!(a.uint32(), 3470709064);
+/// ```
+#[derive(Copy, Clone)]
 pub struct Alea{
-    s0: f64, //three numbers that determine the internal state of alea
+    s0: f64, //three numbers that determine the internal state of alea.
     s1: f64,
     s2: f64,
     x: f64
 }
 impl Alea {
+    /// Initializes the random number generator with a string seed.
     pub fn new(seed: String)->Self{
         let mut mash = Mash::new();
         let mut s0 = mash.hash(" ");
@@ -51,6 +77,7 @@ impl Alea {
         }
         Self { s0,s1,s2,x}
     }
+    /// Returns a random f64 value.
     pub fn random(&mut self) -> f64{
         let y = self.x * 2f64.powi(-32) + self.s0 * 2091639.0;
         self.s0 = self.s1;
@@ -59,6 +86,74 @@ impl Alea {
         self.s2 = y - self.x;
         self.s2
     }
+    /// Returns a random u32 value.
+    pub fn uint32(&mut self)-> u32{
+        (self.random() * 2f64.powi(32)) as u32
+    }
+}
+
+struct MashFast{
+    n:f64
+}
+impl MashFast{
+    pub fn new()->Self{
+        Self { n: 4022871197.0 }
+    }
+    pub fn hash(&mut self, r:&str)->f64{
+        for s in r.encode_utf16().collect::<Vec<u16>>(){
+            self.n += s as f64;
+            let mut hash: f64 = self.n * 0.02519603282416938;
+            self.n = hash.trunc();
+            hash -= self.n;
+            hash *= self.n;
+            self.n = hash.trunc();
+            hash -= self.n;
+            self.n += (hash * 2f64.powi(32)).trunc();
+        }
+        (self.n)* 2f64.powi(-32)
+    }
+}
+/// Seedable random number generator.
+/// This version is more performant, but could vary from javascript with extreme values.
+#[derive(Copy, Clone)]
+pub struct AleaFast{
+    s0: f64, //three numbers that determine the internal state of alea
+    s1: f64,
+    s2: f64,
+    x: f64
+}
+impl AleaFast {
+    /// Initializes the random number generator with a string seed.
+    pub fn new(seed: String)->Self{
+        let mut mash = MashFast::new();
+        let mut s0 = mash.hash(" ");
+        let mut s1 = mash.hash(" ");
+        let mut s2 = mash.hash(" ");
+        let x = 1.0;
+        s0 -= mash.hash(&seed);
+        s1 -= mash.hash(&seed);
+        s2 -= mash.hash(&seed);
+        if s0 < 0.0{
+            s0 +=1.0;
+        }
+        if s1 < 0.0{
+            s1 +=1.0;
+        }
+        if s2 < 0.0{
+            s2 +=1.0;
+        }
+        Self { s0,s1,s2,x}
+    }
+    /// Returns a random f64 value.
+    pub fn random(&mut self) -> f64{
+        let y = self.x * 2f64.powi(-32) + self.s0 * 2091639.0;
+        self.s0 = self.s1;
+        self.s1 = self.s2;
+        self.x = y.trunc();
+        self.s2 = y - self.x;
+        self.s2
+    }
+    /// Returns a random u32 value.
     pub fn uint32(&mut self)-> u32{
         (self.random() * 2f64.powi(32)) as u32
     }
@@ -107,22 +202,13 @@ mod tests {
         let mut a = Alea::new("frank".to_string());
         assert_eq!(a.uint32(), 3470709064);
     }
+    #[test]
+    fn alea_fast_test(){
+        let mut a = AleaFast::new("frank".to_string());
+        assert_eq!(a.random(), 0.8080874253064394);
+        assert_eq!(a.random(), 0.8366762748919427);
+        assert_eq!(a.random(), 0.24404818122275174);
+        let mut a = AleaFast::new("frank".to_string());
+        assert_eq!(a.uint32(), 3470709064);
+    }
 }
-/*
-This generator implements my variation on Marsaglia's Multiply-with-carry theme,
-adapted to javascript's quaint notion of numbers: the carries are exactly the integer parts of Numbers with exactly 32 bits of fractional part.
-
-Such generators depend crucially on their multiplier, a.
-It must be less than 221, so that the result of the multiplication fits in 53 bits,
-and for an array of n 32-bit numbers, a * 232n - 1 must be a safe prime.
-The period is the corresponding Germain prime, a * 232n - 1 - 1.
-
-The one presented here uses n = 3: just 3 32-bit fractions,
-which means that one may use three rotating variables without walking through an Array.
-(Table lookup is rather expensive, time-wise.) The period is close to 2116, it passes BigCrush,
-and it is the fastest javascript PRNG I know that does so.
-
-I expected such generators with any n up to 256 (or even beyond, if one wants monstrously long periods
-    and can find the appropriate multipliers) to be faster than those relying on integer arithmetics, which they are.
-    But they also turn out to be faster than the lagged Fibonacci generators if one does not insist on 53 bits, much to my surprise.
- */
