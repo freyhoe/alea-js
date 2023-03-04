@@ -3,7 +3,7 @@ use alea_js::Alea;
 
 fn rng_next(c: &mut Criterion) {
     let mut alea = Alea::new("".to_string());
-    c.bench_function("rng next", |b| b.iter(|| alea.next()));
+    c.bench_function("rng next", |b| b.iter(|| alea.random()));
 }
 
 fn rng_init_zero(c: &mut Criterion) {
