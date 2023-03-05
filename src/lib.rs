@@ -11,9 +11,10 @@ fn bit_or(num : f64)->f64{
 /// # Example
 /// 
 /// ```
-/// let mash = Mash::new();
-/// mash.hash("string to hash")
-/// mash.hash("second string to hash")
+/// use alea_js::Mash;
+/// let mut mash = Mash::new();
+/// mash.hash("string to hash");
+/// mash.hash("second string to hash");
 /// ```
 #[derive(Copy, Clone)]
 pub struct Mash{
@@ -41,11 +42,12 @@ impl Mash{
 /// # Examples
 /// 
 /// ```
-/// let mut a = Alea::new("frank".to_string());
+/// use alea_js::Alea;
+/// let mut a = Alea::new("frank");
 /// assert_eq!(a.random(), 0.8080874253064394);
 /// assert_eq!(a.random(), 0.8366762748919427);
 /// assert_eq!(a.random(), 0.24404818122275174);
-/// let mut a = Alea::new("frank".to_string());
+/// let mut a = Alea::new("frank");
 /// assert_eq!(a.uint32(), 3470709064);
 /// ```
 #[derive(Copy, Clone)]
@@ -57,7 +59,7 @@ pub struct Alea{
 }
 impl Alea {
     /// Initializes the random number generator with a string seed.
-    pub fn new(seed: String)->Self{
+    pub fn new(seed: &str)->Self{
         let mut mash = Mash::new();
         let mut s0 = mash.hash(" ");
         let mut s1 = mash.hash(" ");
@@ -124,7 +126,7 @@ pub struct AleaFast{
 }
 impl AleaFast {
     /// Initializes the random number generator with a string seed.
-    pub fn new(seed: String)->Self{
+    pub fn new(seed: &str)->Self{
         let mut mash = MashFast::new();
         let mut s0 = mash.hash(" ");
         let mut s1 = mash.hash(" ");
@@ -195,20 +197,20 @@ mod tests {
     }
     #[test]
     fn alea_test(){
-        let mut a = Alea::new("frank".to_string());
+        let mut a = Alea::new("frank");
         assert_eq!(a.random(), 0.8080874253064394);
         assert_eq!(a.random(), 0.8366762748919427);
         assert_eq!(a.random(), 0.24404818122275174);
-        let mut a = Alea::new("frank".to_string());
+        let mut a = Alea::new("frank");
         assert_eq!(a.uint32(), 3470709064);
     }
     #[test]
     fn alea_fast_test(){
-        let mut a = AleaFast::new("frank".to_string());
+        let mut a = AleaFast::new("frank");
         assert_eq!(a.random(), 0.8080874253064394);
         assert_eq!(a.random(), 0.8366762748919427);
         assert_eq!(a.random(), 0.24404818122275174);
-        let mut a = AleaFast::new("frank".to_string());
+        let mut a = AleaFast::new("frank");
         assert_eq!(a.uint32(), 3470709064);
     }
 }
